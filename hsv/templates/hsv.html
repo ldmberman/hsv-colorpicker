@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8">
+    <title>HSV 3D color picker</title>
+    <link rel="stylesheet" href="{{ STATIC_ROOT }}/css/hsv.css"></link>
+  </head>
+  <body>
+    <div id='header'>
+        <h4>3D HSV color picker</h4>
+    </div>
+    <div id='content'/>
+        <div id='viewport'></div>
+        <div id='color-picked-info'>
+            <table>
+                <tr>
+                    <th>Rgb</th>
+                    <td><span class='colorRgb'><span></td>
+                </tr>
+                <tr>
+                    <th>Hex</th>
+                    <td><span class='colorHex'><span></td>
+                </tr>
+                <tr>
+                    <th>Hsv</th>
+                    <td><span class='colorHsv'><span></td>
+                </tr>
+                <tr>
+                    <td><div id='color-picked'><div/></td>
+                </tr>
+            </table>
+            </br>
+            </br>
+            <div>
+                <ul>
+                    <li>
+                        You can zoom and rotate the color picker </br>
+                        with the help of the mouse cursor while it </br>
+                        is inside the picker's bounding box.
+                    </li>
+                    <li>
+                        Click on the cone's top pane to choose color hue.
+                    </li>
+                    <li>
+                        Click on the cone's cut panes to pick a color.
+                    </li>
+            <div>
+        </div>
+    </div>
+
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="https://rawgithub.com/mrdoob/three.js/master/build/three.js"></script>
+    <script src="{{ STATIC_ROOT }}/js/vendor/TrackballControls.js"></script>
+    <script src="{{ STATIC_ROOT }}/js/utils.js"></script>
+    <script src="{{ STATIC_ROOT }}/js/hsv.js"></script>
+    <script type="x-shader/x-vertex" id="vertex-shader">
+    {{ vertex_shader_source }}
+    </script>
+    <script type="x-shader/x-fragment" id="fragment-shader">
+    {{ fragment_shader_source}}
+    </script>
+
+    <script type="text/javascript">
+      $(document).ready(function () {
+        new HSV();
+      });
+    </script>
+  </body>
+</html>

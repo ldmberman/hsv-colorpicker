@@ -1,0 +1,18 @@
+
+#viewport {
+    display: inline-block;
+    vertical-align: top;
+    border: 1px solid black;
+    width: 700px;
+    height: 450px;
+}
+
+#color-picked-info {
+    display: inline-block;
+}
+
+#color-picked {
+    border: 1px solid black;
+    width: 50px;
+    height: 50px;
+}

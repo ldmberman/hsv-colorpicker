@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"><head>
+    <meta charset="utf-8">
+    <title>HSV 3D color picker</title>
+    <link rel="stylesheet" href="../css/hsv.css">
+  </head>
+  <body style="">
+    <div id="header">
+        <h4>3D HSV color picker</h4>
+    </div>
+    <div id="content">
+        <div id="viewport"><canvas width="700" height="450"></canvas></div>
+        <div id="color-picked-info">
+            <table>
+                <tbody><tr>
+                    <th>Rgb</th>
+                    <td><span class="colorRgb">22, 83, 19</span></td>
+                </tr>
+                <tr>
+                    <th>Hex</th>
+                    <td><span class="colorHex">155212</span></td>
+                </tr>
+                <tr>
+                    <th>Hsv</th>
+                    <td><span class="colorHsv">117, 0.77, 0.33</span></td>
+                </tr>
+                <tr>
+                    <td><div id="color-picked" style="background-color: rgb(21, 82, 18);"><div></div></div></td>
+                </tr>
+            </tbody></table>
+            <br>
+            <br>
+            <div>
+                <ul>
+                    <li>
+                        You can zoom and rotate the color picker <br>
+                        with the help of the mouse cursor while it <br>
+                        is inside the picker's bounding box.
+                    </li>
+                    <li>
+                        Click on the cone's top pane to choose color hue.
+                    </li>
+                    <li>
+                        Click on the cone's cut panes to pick a color.
+                    </li>
+            <div>
+        </div>
+    </ul></div>
+
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="https://rawgithub.com/mrdoob/three.js/master/build/three.js"></script>
+    <script src="../js/vendor/TrackballControls.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/hsv.js"></script>
+    <script type="x-shader/x-vertex" id="vertex-shader">
+    varying vec4 pos;
+
+void main () {
+    pos = vec4(position, 1.0);
+    gl_Position = projectionMatrix *
+                  modelViewMatrix *
+                  pos;
+}
+
+    </script>
+    <script type="x-shader/x-fragment" id="fragment-shader">
+    uniform float theta;
+uniform float hsv_height;
+uniform float alpha;
+uniform float delta_alpha;
+varying vec4 pos;
+
+float E = 0.5;
+float PI = 3.14159265358979323846264;
+
+bool close(float v1, float v2, float epsilon) {
+    if (abs(v2 - v1) < epsilon) {
+        return true;
+    }
+    return false;
+}
+
+vec3 pos_to_hsv() {
+    float hue, saturation, value, current_radius, current_alpha, x;
+
+    current_radius = pos.z * tan(theta);
+    if (close(current_radius, 0.0, 0.001)) {
+        current_radius = 0.001;
+    }
+    x = pos.x;
+    if (close(x, 0.0, 0.001)) {
+        x = 0.001;
+    }
+    // current_alpha [-PI, PI]
+    current_alpha = atan(pos.y, x);
+    // current_alpha [0, 2PI]
+    if (current_alpha < 0.0) {
+        current_alpha = 2.0 * PI + current_alpha;
+    }
+    // apply rotating delta
+    current_alpha = mod(current_alpha + delta_alpha, 2.0 * PI);
+    // from [0, 2PI] to [alpha, 2PI - alpha]
+    current_alpha = alpha + current_alpha * (PI - alpha) / PI;
+    hue = ((current_alpha - alpha) * PI / (PI - alpha)) * 180.0 / PI;
+    saturation = sqrt(x * x + pos.y * pos.y) / current_radius;
+    value = pos.z / hsv_height;
+    return vec3(hue, saturation, value);
+}
+
+vec3 hsv_to_rgb(vec3 hsv) {
+    float C, X, H_, m;
+    vec3 rgb_;
+
+    C = hsv.z * hsv.y;
+    H_ = hsv.x / 60.0;
+    X = C * (1.0 - abs(mod(H_, 2.0) - 1.0));
+    m = hsv.z - C;
+
+    if (H_ >= 0.0 && H_ < 1.0) {
+        rgb_ = vec3(C, X, 0.0);
+    } else if (H_ >= 1.0 && H_ < 2.0) {
+        rgb_ = vec3(X, C, 0.0);
+    } else if (H_ >= 2.0 && H_ < 3.0) {
+        rgb_ = vec3(0.0, C, X);
+    } else if (H_ >= 3.0 && H_ < 4.0) {
+        rgb_ = vec3(0.0, X, C);
+    } else if (H_ >= 4.0 && H_ < 5.0) {
+        rgb_ = vec3(X, 0.0, C);
+    } else if (H_ >= 5.0 && H_ < 6.0) {
+        rgb_ = vec3(C, 0.0, X);
+    }
+    return vec3(rgb_.r + m, rgb_.g + m, rgb_.b + m);
+}
+
+void main() {
+    float x2, y2, z2, cos_theta2, sin_theta2, kx;
+    vec3 hsv, rgb;
+    bool cone_border, center_border, cut_border;
+
+    x2 = pos.x * pos.x;
+    y2 = pos.y * pos.y;
+    z2 = pos.z * pos.z;
+    cos_theta2 = cos(theta) * cos(theta);
+    sin_theta2 = sin(theta) * sin(theta);
+    kx = tan(alpha) * pos.x;
+
+    cone_border = close((x2 + y2) * cos_theta2 - z2 * sin_theta2, 0.0, E);
+    center_border = close(pos.x, 0.0, E) && close(pos.y, 0.0, E);
+    cut_border = close(pos.z, hsv_height, E) && (close(pos.y, kx, E) &&
+          pos.y >= 0.0 || close(pos.y, -1.0 * kx, E) && pos.y < 0.0);
+
+    hsv = pos_to_hsv();
+    rgb = hsv_to_rgb(hsv);
+
+    if (cone_border || center_border || cut_border) {
+        // Black borders.
+        gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+    } else {
+        gl_FragColor = vec4(rgb.r, rgb.g, rgb.b, 1.0);
+    }
+}
+
+    </script>
+
+    <script type="text/javascript">
+      $(document).ready(function () {
+        new HSV();
+      });
+    </script>
+  
+</div></div></body></html>
